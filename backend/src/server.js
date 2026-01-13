@@ -9,12 +9,20 @@ const {
   updateTask,
   deleteTask
 } = require('./controllers/taskController');
+const {
+  getProfile,
+  updateProfile,
+  deleteAccount
+} = require('./controllers/profileController');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors()); // Enable CORS for all routes
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5000'],
+  credentials: true
+})); // Enable CORS for all routes
 app.use(express.json()); // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded request bodies
 
@@ -31,6 +39,11 @@ app.post('/api/tasks', authMiddleware, createTask);
 app.get('/api/tasks', authMiddleware, getTasks);
 app.put('/api/tasks/:id', authMiddleware, updateTask);
 app.delete('/api/tasks/:id', authMiddleware, deleteTask);
+
+// Profile routes (all protected by authMiddleware)
+app.get('/api/profile', authMiddleware, getProfile);
+app.put('/api/profile', authMiddleware, updateProfile);
+app.delete('/api/profile', authMiddleware, deleteAccount);
 
 // Start server
 app.listen(PORT, () => {

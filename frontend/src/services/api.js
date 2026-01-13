@@ -2,8 +2,9 @@ import axios from 'axios';
 import { supabase } from '../config/supabaseClient';
 
 // Create axios instance with base URL
+// Backend runs on port 3000 by default, but can be configured via env
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -35,6 +36,25 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // Log detailed error for debugging
+    if (error.response) {
+      // Server responded with error status
+      console.error('API Error:', {
+        status: error.response.status,
+        data: error.response.data,
+        url: error.config?.url
+      });
+    } else if (error.request) {
+      // Request was made but no response received
+      console.error('Network Error:', {
+        message: 'No response from server. Is the backend running?',
+        url: error.config?.url
+      });
+    } else {
+      // Something else happened
+      console.error('Error:', error.message);
+    }
+
     // Handle 401 errors (unauthorized) - could redirect to login
     if (error.response?.status === 401) {
       // Optionally clear session and redirect

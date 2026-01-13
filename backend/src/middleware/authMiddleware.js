@@ -1,4 +1,5 @@
 const supabase = require('../config/supabaseClient');
+const isConfigured = supabase.isConfigured;
 
 /**
  * Middleware to verify Bearer token and authenticate user
@@ -6,6 +7,14 @@ const supabase = require('../config/supabaseClient');
  */
 const authMiddleware = async (req, res, next) => {
   try {
+    // Check if Supabase is configured
+    if (!isConfigured || !supabase) {
+      return res.status(503).json({
+        error: 'Service Unavailable',
+        message: 'Supabase is not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY in your .env file.'
+      });
+    }
+
     // Extract Bearer token from Authorization header
     const authHeader = req.headers.authorization;
 
@@ -42,6 +51,15 @@ const authMiddleware = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
+    
+    // Handle specific error cases
+    if (error.code === 'ENOTFOUND' || error.message?.includes('getaddrinfo')) {
+      return res.status(503).json({
+        error: 'Service Unavailable',
+        message: 'Cannot connect to Supabase. Please check your SUPABASE_URL in the .env file.'
+      });
+    }
+    
     return res.status(500).json({
       error: 'Internal Server Error',
       message: 'Authentication failed'

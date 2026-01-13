@@ -4,6 +4,7 @@ import { supabase } from './config/supabaseClient';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -50,6 +51,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }
           />

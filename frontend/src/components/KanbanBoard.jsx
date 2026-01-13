@@ -1,75 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import TaskCard from './TaskCard';
+import AddTaskModal from './AddTaskModal';
+import api from '../services/api';
 
-// Mock data for demonstration
-const initialTasks = {
-  pending: [
-    {
-      id: '1',
-      title: 'Design Landing Page',
-      description: 'Create wireframes and mockups for the new landing page design',
-      status: 'pending',
-      due_date: '2024-12-20T00:00:00Z',
-      created_at: '2024-12-10T00:00:00Z'
-    },
-    {
-      id: '2',
-      title: 'Write API Documentation',
-      description: 'Document all REST API endpoints with examples',
-      status: 'pending',
-      due_date: '2024-12-25T00:00:00Z',
-      created_at: '2024-12-11T00:00:00Z'
-    },
-    {
-      id: '3',
-      title: 'Setup CI/CD Pipeline',
-      description: 'Configure GitHub Actions for automated testing and deployment',
-      status: 'pending',
-      due_date: null,
-      created_at: '2024-12-12T00:00:00Z'
+// Helper function to organize tasks by status
+const organizeTasksByStatus = (tasksArray) => {
+  const organized = {
+    pending: [],
+    'in-progress': [],
+    completed: []
+  };
+
+  tasksArray.forEach(task => {
+    if (organized[task.status]) {
+      organized[task.status].push(task);
     }
-  ],
-  'in-progress': [
-    {
-      id: '4',
-      title: 'Implement User Authentication',
-      description: 'Add login and signup functionality with JWT tokens',
-      status: 'in-progress',
-      due_date: '2024-12-18T00:00:00Z',
-      created_at: '2024-12-08T00:00:00Z'
-    },
-    {
-      id: '5',
-      title: 'Database Schema Design',
-      description: 'Design and implement the database schema for the application',
-      status: 'in-progress',
-      due_date: '2024-12-22T00:00:00Z',
-      created_at: '2024-12-09T00:00:00Z'
-    }
-  ],
-  completed: [
-    {
-      id: '6',
-      title: 'Project Setup',
-      description: 'Initialize the project with React and Vite',
-      status: 'completed',
-      due_date: '2024-12-15T00:00:00Z',
-      created_at: '2024-12-01T00:00:00Z'
-    },
-    {
-      id: '7',
-      title: 'Install Dependencies',
-      description: 'Install and configure all required packages',
-      status: 'completed',
-      due_date: '2024-12-15T00:00:00Z',
-      created_at: '2024-12-02T00:00:00Z'
-    }
-  ]
+  });
+
+  return organized;
 };
 
 const KanbanBoard = () => {
-  const [tasks, setTasks] = useState(initialTasks);
+  const [tasks, setTasks] = useState({
+    pending: [],
+    'in-progress': [],
+    completed: []
+  });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const columns = [
     { id: 'pending', title: 'Pending', color: 'yellow' },
@@ -77,7 +38,70 @@ const KanbanBoard = () => {
     { id: 'completed', title: 'Completed', color: 'green' }
   ];
 
-  const onDragEnd = (result) => {
+  // Fetch tasks from API on component mount
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  const fetchTasks = async () => {
+    try {
+      setFetchLoading(true);
+      setError(null);
+      const response = await api.get('/tasks');
+      const tasksArray = response.data.tasks || [];
+      const organizedTasks = organizeTasksByStatus(tasksArray);
+      setTasks(organizedTasks);
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
+      
+      // Provide more specific error messages
+      if (err.code === 'ECONNREFUSED' || err.message?.includes('Network Error')) {
+        setError('Cannot connect to backend server. Please ensure the backend is running on port 3000.');
+      } else if (err.response?.status === 401) {
+        setError('Authentication failed. Please log in again.');
+      } else if (err.response?.status === 500) {
+        setError('Server error. Please try again later.');
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError('Failed to load tasks. Please check your connection and try again.');
+      }
+    } finally {
+      setFetchLoading(false);
+    }
+  };
+
+  const handleAddTask = async (taskData) => {
+    try {
+      setLoading(true);
+      // Call backend API to create task
+      const response = await api.post('/tasks', taskData);
+      const newTask = response.data.task;
+
+      // Update local state to add the new task to the appropriate column
+      setTasks(prevTasks => ({
+        ...prevTasks,
+        [newTask.status]: [...(prevTasks[newTask.status] || []), newTask]
+      }));
+    } catch (error) {
+      console.error('Error creating task:', error);
+      throw error; // Re-throw to let modal handle error display
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateTaskStatus = async (taskId, newStatus) => {
+    try {
+      await api.put(`/tasks/${taskId}`, { status: newStatus });
+      return true;
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      return false;
+    }
+  };
+
+  const onDragEnd = async (result) => {
     const { destination, source, draggableId } = result;
 
     // If dropped outside a droppable area
@@ -98,18 +122,30 @@ const KanbanBoard = () => {
     const destColumn = tasks[destination.droppableId];
     const task = sourceColumn[source.index];
 
-    // If moving within the same column
+    // Determine new status based on destination column
+    const newStatus = destination.droppableId === 'pending' ? 'pending' :
+                      destination.droppableId === 'in-progress' ? 'in-progress' : 'completed';
+
+    // Store previous state for potential revert (deep copy)
+    const previousTasks = {
+      pending: [...tasks.pending],
+      'in-progress': [...tasks['in-progress']],
+      completed: [...tasks.completed]
+    };
+
+    // If moving within the same column (just reordering)
     if (source.droppableId === destination.droppableId) {
       const newTasks = Array.from(sourceColumn);
       newTasks.splice(source.index, 1);
       newTasks.splice(destination.index, 0, task);
 
+      // Optimistic update
       setTasks({
         ...tasks,
         [source.droppableId]: newTasks
       });
     } else {
-      // Moving to a different column
+      // Moving to a different column (status change)
       const sourceTasks = Array.from(sourceColumn);
       const destTasks = Array.from(destColumn);
 
@@ -119,28 +155,92 @@ const KanbanBoard = () => {
       // Update task status
       const updatedTask = {
         ...task,
-        status: destination.droppableId === 'pending' ? 'pending' :
-                destination.droppableId === 'in-progress' ? 'in-progress' : 'completed'
+        status: newStatus
       };
 
       // Add to destination
       destTasks.splice(destination.index, 0, updatedTask);
 
+      // Optimistic update - immediately update UI
       setTasks({
         ...tasks,
         [source.droppableId]: sourceTasks,
         [destination.droppableId]: destTasks
       });
+
+      // Send API request to update status
+      const success = await updateTaskStatus(task.id, newStatus);
+
+      // If API call fails, revert to previous state
+      if (!success) {
+        setTasks(previousTasks);
+        setError('Failed to update task status. Please try again.');
+        // Clear error after 3 seconds
+        setTimeout(() => setError(null), 3000);
+      }
     }
   };
 
   return (
     <div className="p-4 md:p-6 lg:p-8">
-      <h1 className="text-3xl md:text-4xl font-bold text-white mb-6 md:mb-8">
-        Task Board
-      </h1>
+      <div className="flex justify-between items-center mb-6 md:mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-white">
+          Task Board
+        </h1>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="px-4 py-2 md:px-6 md:py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          <span className="hidden md:inline">Add Task</span>
+          <span className="md:hidden">Add</span>
+        </button>
+      </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200">
+          {error}
+        </div>
+      )}
+
+      {/* Loading State */}
+      {fetchLoading && (
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-white text-xl">Loading tasks...</div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!fetchLoading && !error && 
+       tasks.pending.length === 0 && 
+       tasks['in-progress'].length === 0 && 
+       tasks.completed.length === 0 && (
+        <div className="flex flex-col justify-center items-center min-h-[400px] text-center">
+          <p className="text-white/80 text-lg mb-4">No tasks found.</p>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition duration-200"
+          >
+            Create Your First Task
+          </button>
+        </div>
+      )}
+
+      {!fetchLoading && (
+        <DragDropContext onDragEnd={onDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {columns.map((column) => (
             <div
@@ -198,6 +298,14 @@ const KanbanBoard = () => {
           ))}
         </div>
       </DragDropContext>
+      )}
+
+      {/* Add Task Modal */}
+      <AddTaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAddTask={handleAddTask}
+      />
     </div>
   );
 };
