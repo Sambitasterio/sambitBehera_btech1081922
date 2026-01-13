@@ -31,6 +31,7 @@ const KanbanBoard = () => {
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [statusFilter, setStatusFilter] = useState(null); // null = show all
 
   const columns = [
     { id: 'pending', title: 'Pending', color: 'yellow' },
@@ -38,16 +39,19 @@ const KanbanBoard = () => {
     { id: 'completed', title: 'Completed', color: 'green' }
   ];
 
-  // Fetch tasks from API on component mount
+  // Fetch tasks from API on component mount and when filter changes
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [statusFilter]);
 
   const fetchTasks = async () => {
     try {
       setFetchLoading(true);
       setError(null);
-      const response = await api.get('/tasks');
+      
+      // Build query with optional status filter
+      const queryParams = statusFilter ? `?status=${statusFilter}` : '';
+      const response = await api.get(`/tasks${queryParams}`);
       const tasksArray = response.data.tasks || [];
       const organizedTasks = organizeTasksByStatus(tasksArray);
       setTasks(organizedTasks);
@@ -218,30 +222,73 @@ const KanbanBoard = () => {
 
   return (
     <div className="p-4 md:p-6 lg:p-8">
-      <div className="flex justify-between items-center mb-6 md:mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-white">
           Task Board
         </h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 md:px-6 md:py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        
+        <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+          {/* Filter by Status Dropdown */}
+          <div className="relative">
+            <label htmlFor="status-filter" className="block text-sm font-medium text-white/90 mb-2">
+              Filter by Status
+            </label>
+            <div className="relative">
+              <select
+                id="status-filter"
+                value={statusFilter || 'all'}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setStatusFilter(value === 'all' ? null : value);
+                }}
+                className="w-full md:w-48 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none cursor-pointer pr-10"
+              >
+                <option value="all" className="bg-gray-800 text-white">All</option>
+                <option value="pending" className="bg-gray-800 text-white">Pending</option>
+                <option value="in-progress" className="bg-gray-800 text-white">In Progress</option>
+                <option value="completed" className="bg-gray-800 text-white">Completed</option>
+              </select>
+              {/* Custom dropdown arrow */}
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg
+                  className="w-5 h-5 text-white/70"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Add Task Button */}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 md:px-6 md:py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl self-end md:self-auto"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          <span className="hidden md:inline">Add Task</span>
-          <span className="md:hidden">Add</span>
-        </button>
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            <span className="hidden md:inline">Add Task</span>
+            <span className="md:hidden">Add</span>
+          </button>
+        </div>
       </div>
 
       {/* Error Message */}
@@ -277,7 +324,9 @@ const KanbanBoard = () => {
       {!fetchLoading && (
         <DragDropContext onDragEnd={onDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-          {columns.map((column) => (
+          {columns
+            .filter(column => statusFilter === null || column.id === statusFilter)
+            .map((column) => (
             <div
               key={column.id}
               className="flex flex-col bg-white/10 backdrop-blur-lg rounded-xl shadow-xl border border-white/20 p-4 md:p-6 min-h-[500px]"
