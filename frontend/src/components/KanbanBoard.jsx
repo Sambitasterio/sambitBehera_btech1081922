@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import TaskCard from './TaskCard';
 import AddTaskModal from './AddTaskModal';
-import api from '../services/api';
+import api, { getApiBaseURL } from '../services/api';
 
 // Helper function to organize tasks by status
 const organizeTasksByStatus = (tasksArray) => {
@@ -59,8 +59,9 @@ const KanbanBoard = () => {
       console.error('Error fetching tasks:', err);
       
       // Provide more specific error messages
-      if (err.code === 'ECONNREFUSED' || err.message?.includes('Network Error')) {
-        setError('Cannot connect to backend server. Please ensure the backend is running on port 3000.');
+      if (err.code === 'ECONNREFUSED' || err.message?.includes('Network Error') || !err.response) {
+        const apiUrl = getApiBaseURL();
+        setError(`Cannot connect to backend server at ${apiUrl}. Please check if the backend is running and accessible.`);
       } else if (err.response?.status === 401) {
         setError('Authentication failed. Please log in again.');
       } else if (err.response?.status === 500) {

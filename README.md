@@ -2,6 +2,8 @@
 
 A full-stack task management application built with React, Express.js, and Supabase. Features a modern Kanban board interface for organizing tasks with drag-and-drop functionality, user authentication, and profile management.
 
+🌐 **Live Application**: [View Live Demo](https://sambitbehera-btech1081922-1.onrender.com)
+
 ## 🚀 Features
 
 - **User Authentication**: Secure login and signup using Supabase Auth
@@ -9,6 +11,7 @@ A full-stack task management application built with React, Express.js, and Supab
 - **Task Management**: Create, read, update, and delete tasks
 - **User-Specific Tasks**: Each user can only access their own tasks (Row Level Security)
 - **Profile Management**: Edit profile details and delete account
+- **Status Filtering**: Filter tasks by status (All, Pending, In Progress, Completed)
 - **Real-time Updates**: Optimistic UI updates with automatic sync to backend
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Modern UI**: Beautiful gradient design with glassmorphism effects
@@ -234,15 +237,56 @@ All endpoints (except `/`) require authentication via Bearer token in the Author
 
 ### Task Management
 - Create tasks with title, description, status, and due date
-- Filter tasks by status
-- Mark tasks as overdue
+- Filter tasks by status using dropdown filter
+- Mark tasks as overdue (visual indicators)
 - Edit task details
-- Delete tasks
+- Delete tasks with confirmation
+- Drag and drop tasks between status columns
 
 ### Profile Management
 - View account information
 - Update email and profile metadata
 - Delete account (with optional automatic deletion via service role key)
+
+## 🚀 Deployment
+
+This application is deployed on **Render**:
+
+- **Frontend**: Deployed as a static site on Render
+- **Backend**: Deployed as a web service on Render
+
+### Production URLs
+- **Frontend**: https://sambitbehera-btech1081922-1.onrender.com
+- **Backend API**: https://sambitbehera-btech1081922.onrender.com
+
+### Deployment Configuration
+
+#### Backend Deployment (Render)
+1. Connect your GitHub repository to Render
+2. Create a new **Web Service**
+3. Set build command: `cd backend && npm install`
+4. Set start command: `cd backend && npm start`
+5. Add environment variables:
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (optional)
+   - `PORT` (Render will set this automatically)
+   - `NODE_ENV=production`
+
+#### Frontend Deployment (Render)
+1. Create a new **Static Site**
+2. Connect your GitHub repository
+3. Set build command: `cd frontend && npm install && npm run build`
+4. Set publish directory: `frontend/dist`
+5. Add environment variables:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_API_URL` (your backend URL)
+
+### CORS Configuration
+The backend is configured to accept requests from:
+- Production frontend: `https://sambitbehera-btech1081922-1.onrender.com`
+- Local development: `http://localhost:5173`, `http://localhost:3000`, `http://localhost:5000`
 
 ## 🧪 Development
 
@@ -282,9 +326,10 @@ All endpoints (except `/`) require authentication via Bearer token in the Author
 - Ensure port 3000 is not in use
 
 ### Frontend can't connect to backend
-- Verify backend is running on port 3000
-- Check `VITE_API_URL` in frontend `.env`
+- **Local Development**: Verify backend is running on port 3000
+- **Production**: Check `VITE_API_URL` in frontend `.env` or verify it's set in Render environment variables
 - Check browser console for CORS errors
+- Verify backend URL is correct (should be `https://sambitbehera-btech1081922.onrender.com/api` for production)
 
 ### Tasks not loading
 - Verify Supabase table `tasks` exists (run `supabase_schema.sql`)
@@ -292,9 +337,17 @@ All endpoints (except `/`) require authentication via Bearer token in the Author
 - Verify user is authenticated
 
 ### Authentication errors
-- Check Supabase credentials in both frontend and backend `.env`
+- Check Supabase credentials in both frontend and backend `.env` (or Render environment variables)
 - Verify Supabase project is active
 - Check browser console for token errors
+- Ensure CORS is properly configured on backend for your frontend URL
+
+### Production deployment issues
+- Verify all environment variables are set in Render dashboard
+- Check Render logs for build or runtime errors
+- Ensure backend service is running (check Render dashboard status)
+- Verify frontend build completed successfully
+- Check that `VITE_API_URL` points to the correct backend URL in production
 
 ## 📄 License
 

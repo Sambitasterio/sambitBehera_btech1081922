@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../config/supabaseClient';
-import api from '../services/api';
+import api, { getApiBaseURL } from '../services/api';
 
 const Profile = () => {
   const [profile, setProfile] = useState(null);
@@ -82,8 +82,9 @@ const Profile = () => {
       console.error('Error updating profile:', err);
       
       // Provide more specific error messages
-      if (err.code === 'ECONNREFUSED' || err.message?.includes('Network Error')) {
-        setError('Cannot connect to backend server. Please ensure the backend is running on port 3000.');
+      if (err.code === 'ECONNREFUSED' || err.message?.includes('Network Error') || !err.response) {
+        const apiUrl = getApiBaseURL();
+        setError(`Cannot connect to backend server at ${apiUrl}. Please check if the backend is running and accessible.`);
       } else if (err.response?.status === 401) {
         setError('Authentication failed. Please log in again.');
       } else if (err.response?.status === 400) {

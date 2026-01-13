@@ -3,12 +3,22 @@ import { supabase } from '../config/supabaseClient';
 
 // Create axios instance with base URL
 // Use environment variable or default to production URL
+const baseURL = import.meta.env.VITE_API_URL || 'https://sambitbehera-btech1081922.onrender.com/api';
+
+// Log the API URL being used (helpful for debugging)
+console.log('🔗 API Base URL:', baseURL);
+console.log('🌍 Environment:', import.meta.env.MODE);
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://sambitbehera-btech1081922.onrender.com/api',
+  baseURL: baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 second timeout for production
 });
+
+// Export baseURL for use in error messages
+export const getApiBaseURL = () => baseURL;
 
 // Request interceptor to attach Supabase Access Token
 api.interceptors.request.use(
@@ -48,7 +58,9 @@ api.interceptors.response.use(
       // Request was made but no response received
       console.error('Network Error:', {
         message: 'No response from server. Is the backend running?',
-        url: error.config?.url
+        url: error.config?.url,
+        baseURL: baseURL,
+        fullURL: baseURL + (error.config?.url || '')
       });
     } else {
       // Something else happened
