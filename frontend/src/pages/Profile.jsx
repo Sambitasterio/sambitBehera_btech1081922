@@ -80,10 +80,22 @@ const Profile = () => {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       console.error('Error updating profile:', err);
-      if (err.response?.data?.message) {
+      
+      // Provide more specific error messages
+      if (err.code === 'ECONNREFUSED' || err.message?.includes('Network Error')) {
+        setError('Cannot connect to backend server. Please ensure the backend is running on port 3000.');
+      } else if (err.response?.status === 401) {
+        setError('Authentication failed. Please log in again.');
+      } else if (err.response?.status === 400) {
+        setError(err.response.data?.message || 'Invalid data. Please check your input.');
+      } else if (err.response?.status === 500) {
+        setError(err.response.data?.details || err.response.data?.message || 'Server error. Please try again later.');
+      } else if (err.response?.data?.message) {
         setError(err.response.data.message);
+      } else if (err.response?.data?.details) {
+        setError(err.response.data.details);
       } else {
-        setError('Failed to update profile. Please try again.');
+        setError('Failed to update profile. Please check your connection and try again.');
       }
     } finally {
       setSaving(false);
