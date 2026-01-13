@@ -36,8 +36,9 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
-    // Attach user to request object for use in route handlers
+    // Attach user and token to request object for use in route handlers
     req.user = user;
+    req.token = token; // Attach token for use in controllers
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);

@@ -2,6 +2,14 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+const authMiddleware = require('./middleware/authMiddleware');
+const {
+  createTask,
+  getTasks,
+  updateTask,
+  deleteTask
+} = require('./controllers/taskController');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -17,6 +25,12 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Task routes (all protected by authMiddleware)
+app.post('/api/tasks', authMiddleware, createTask);
+app.get('/api/tasks', authMiddleware, getTasks);
+app.put('/api/tasks/:id', authMiddleware, updateTask);
+app.delete('/api/tasks/:id', authMiddleware, deleteTask);
 
 // Start server
 app.listen(PORT, () => {
