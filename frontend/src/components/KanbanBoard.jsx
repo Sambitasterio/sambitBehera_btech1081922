@@ -101,6 +101,41 @@ const KanbanBoard = () => {
     }
   };
 
+  const handleDeleteTask = async (taskId) => {
+    try {
+      // Find the task to get its status (which column it's in)
+      let taskStatus = null;
+      for (const [status, taskList] of Object.entries(tasks)) {
+        if (taskList.find(t => t.id === taskId)) {
+          taskStatus = status;
+          break;
+        }
+      }
+
+      if (!taskStatus) {
+        console.error('Task not found');
+        return;
+      }
+
+      // Optimistic update - remove task from UI immediately
+      setTasks(prevTasks => ({
+        ...prevTasks,
+        [taskStatus]: prevTasks[taskStatus].filter(t => t.id !== taskId)
+      }));
+
+      // Call API to delete task
+      await api.delete(`/tasks/${taskId}`);
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      
+      // Revert optimistic update on error
+      fetchTasks();
+      
+      setError('Failed to delete task. Please try again.');
+      setTimeout(() => setError(null), 3000);
+    }
+  };
+
   const onDragEnd = async (result) => {
     const { destination, source, draggableId } = result;
 
@@ -285,7 +320,7 @@ const KanbanBoard = () => {
                               ${snapshot.isDragging ? 'opacity-50 rotate-2' : ''}
                             `}
                           >
-                            <TaskCard task={task} />
+                            <TaskCard task={task} onDelete={handleDeleteTask} />
                           </div>
                         )}
                       </Draggable>
