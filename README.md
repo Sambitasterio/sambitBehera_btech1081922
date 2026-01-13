@@ -142,14 +142,18 @@ cp env.example .env
 # Edit .env and add your Supabase credentials
 # VITE_SUPABASE_URL=https://your-project.supabase.co
 # VITE_SUPABASE_ANON_KEY=your_anon_key
-# VITE_API_URL=http://localhost:3000/api
+# VITE_API_URL=https://sambitbehera-btech1081922.onrender.com/api (production)
+# or VITE_API_URL=http://localhost:3000/api (local development)
 ```
 
 **Frontend Environment Variables** (`.env`):
 ```env
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_API_URL=http://localhost:3000/api
+# Production backend URL
+VITE_API_URL=https://sambitbehera-btech1081922.onrender.com/api
+# Or for local development:
+# VITE_API_URL=http://localhost:3000/api
 ```
 
 ### 5. Start the Development Servers
@@ -176,6 +180,12 @@ The frontend will run on `http://localhost:5173` (Vite default port).
 
 ### 6. Access the Application
 
+**Production URLs:**
+- **Frontend**: https://sambitbehera-btech1081922-1.onrender.com
+- **Backend API**: https://sambitbehera-btech1081922.onrender.com
+- **API Test**: https://sambitbehera-btech1081922.onrender.com/ (returns "API is running")
+
+**Local Development:**
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:3000
 - **API Test**: http://localhost:3000/ (returns "API is running")
@@ -262,7 +272,7 @@ All endpoints (except `/`) require authentication via Bearer token in the Author
 |----------|-------------|----------|
 | `VITE_SUPABASE_URL` | Your Supabase project URL | Yes |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anonymous/public key | Yes |
-| `VITE_API_URL` | Backend API URL (default: http://localhost:3000/api) | No |
+| `VITE_API_URL` | Backend API URL (default: https://sambitbehera-btech1081922.onrender.com/api) | No |
 
 ## 🐛 Troubleshooting
 

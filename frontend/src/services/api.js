@@ -2,9 +2,9 @@ import axios from 'axios';
 import { supabase } from '../config/supabaseClient';
 
 // Create axios instance with base URL
-// Backend runs on port 3000 by default, but can be configured via env
+// Use environment variable or default to production URL
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://sambitbehera-btech1081922.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
   },

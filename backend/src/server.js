@@ -20,7 +20,13 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5000'],
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:5000',
+    'https://sambitbehera-btech1081922-1.onrender.com',
+    'https://sambitbehera-btech1081922.onrender.com'
+  ],
   credentials: true
 })); // Enable CORS for all routes
 app.use(express.json()); // Parse JSON request bodies
